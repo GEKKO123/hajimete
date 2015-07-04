@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>時刻表</title>
+	<link rel="stylesheet" href="default.css" type="text/css" />
+	<script src="timedate.js"></script>
+	<script src="main.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  </head>
+
+<body onload="init()">
+
+
+
+<div id="clock-02"></div>
+<div>
+ <div id="report">
+ </div>
+</div>
+	
+乗換駅表示<br>
+<a href="#" OnClick="StationGroup(1110315)">札幌駅</a> | 
+<a href="#" OnClick="StationGroup(1130208)">新宿駅</a> | 
+<a href="#" OnClick="StationGroup(3000136)">名古屋駅</a> | 
+<a href="#" OnClick="StationGroup(2800213)">赤坂見附駅</a> | 
+<a href="#" OnClick="StationGroup(0)">クリア</a><br />
+<div id="s_group"></div>
+
+<form name="menuform">
+<select size="1" name="tablelist" onchange="selectTable(this.selectedIndex-1)">
+<option value="top">時刻表を選択
+</option><option value="tbl001">東西線 南砂町駅 東葉勝田台方面</option><option value="tbl002">東西線 南砂町駅 中野方面</option><option value="tbl003">東西線 東陽町駅 東葉勝田台方面</option><option value="tbl004">小田急 渋沢駅 新宿方面</option><option value="tbl005">小田急 渋沢駅 小田原方面</option></select>
+<br>
+<select size="1" name="viewlist" onchange="selectView(this.selectedIndex-1)">
+<option value="next_0">表示方法を選択
+</option><option value="next_0">出発リスト[現在]
+</option><option value="next_15">出発リスト[15分後]
+</option><option value="next_30">出発リスト[30分後]
+</option><option value="next_45">出発リスト[45分後]
+</option><option value="next_60">出発リスト[1時間後]
+</option><option value="last">最終便リスト
+</option><option value="mon">時刻表[月曜日]
+</option><option value="tue">時刻表[火曜日]
+</option><option value="wed">時刻表[水曜日]
+</option><option value="thu">時刻表[木曜日]
+</option><option value="fri">時刻表[金曜日]
+</option><option value="sat">時刻表[土曜日]
+</option><option value="sun">時刻表[日曜日]
+</option><option value="hol">時刻表[祝日]
+</option></select>
+<br>
+<select size="1" name="filterlist" onchange="selectFilter(this.selectedIndex-1)">
+<option value="0">抽出条件を選択
+</option><option value="0">すべて
+</option><option value="a">特急</option><option value="c">快速急行</option><option value="d">急行</option><option value="i">急行(経堂通過)</option><option value="e">準急</option><option value="f">区間準急</option><option value="g">各停</option><option value="A">経堂</option><option value="B">成城学園前</option><option value="C">向ヶ丘遊園</option><option value="D">新百合ヶ丘</option><option value="E">町田</option><option value="F">相模大野</option><option value="G">相武台前</option><option value="H">海老名</option><option value="I">本厚木</option><option value="J">伊勢原</option><option value="K">秦野</option><option value="L">新松田</option><option value="M">小田原</option><option value="N">箱根湯本</option><option value="O">藤沢</option><option value="P">片瀬江ノ島</option><option value="Q">唐木田</option><option value="R">沼津</option><option value="j">新松田から各駅停車小田原行き</option><option value="k">新松田から各駅停車箱根湯本行き</option><option value="l">本厚木から各駅に停車</option><option value="m">代々木上原で多摩急行に連絡</option><option value="n">本鵠沼、鵠沼海岸停車の急行</option><option value="o">新松田で小田原行き各停に連絡</option></select>
+</form>
+
+<!--TOP DATE-->
+<div id="dispdate" class="date">7/1(水)の時刻表</div>
+<div id="disptimetable"><a name="top"></a>
+<table class="list" cellspacing="0">
+<tbody><tr><td colspan="2" class="list_t wek3"><div class="station">サンプル●●駅 ○○方面(平日/土日祝日)</div></td></tr>
+<tr><td class="list_h wek1">&nbsp;○○:○○ </td><td class="list_c wek1"><span class="match">特急　【停車駅】</span><div class="station">上野　赤羽　浦和　大宮　</div> </td></tr>
+<tr><td colspan="2" class="lasttime wek1">出発まであと ●時間 ●分</td></tr>
+<tr><td class="list_h wek2">&nbsp;○○:○○ </td><td class="list_c wek2"><span class="match">快速　【停車駅】</span><div class="station">東京　神田　秋葉原　御徒町　上野</div> </td></tr>
+<tr><td colspan="2" class="lasttime wek2">出発まであと ●時間 ●分</td></tr>
+<tr><td class="list_h wek1">&nbsp;○○:○○ </td><td class="list_c wek1"><span class="match">通勤快速　【停車駅】</span><div class="station">池袋　新宿　渋谷　恵比寿</div> </td></tr>
+<tr><td colspan="2" class="lasttime wek1">出発まであと ●時間 ●分</td></tr>
+
+<tr><td colspan="2" class="list_t wek3">●●駅 ○○方面(平日)</td></tr>
+</tbody></table>
+</div>
+
+
+<font color="white">
+
+<!-- TBL_START 時刻表データ部 開始 -->
+
+<pre id="tbl001" style="display:none;">; 東西線 南砂町駅 西船橋方面
+; 平成27.3.14改正
+
+a:普通
+b:最終
+A:西船橋
+B:東葉勝田台
+C:八千代緑が丘
+D:津田沼
+E:妙典
+
+
+
+
+# 南砂町駅 西船橋方面(平日)
+5: aA00 aA13 aB30 aB43 aA51 aB54 aA58  
+6: aB04 aA07 aB13 aA18 aB24 aA27 aB30 aB39 aA42 aB46 aA49 aB53 
+7: aA00 aD03 aD09 aA12 aB18 aD20 aD23 aB25 aB32 aE35 aB38 aD44 aE46 aD49 aA55 aD58
+8: aC05 aD08 aE13 aA17 aE22 aA25 aA30 aE32 aB35 aE40 aC42 aA45 aA50 aA55
+9: aA00 aA05 aA10 aA15 aE20 aB23 aA31 aE33 aA38 aA44 aA48 aE54 aA58
+10: aA04 aE06 aA09 aE16 aA21 aA29 aA32 aE39 aA42 aA50 aC56 
+11: aA03 aA08 aA12 aA20 aA25 aA34 aA40 aA49 aA55 
+12: aA04 aA10 aA19 aA25 aA34 aA40 aA49 aA55
+13: aA04 aA10 aA19 aA25 aA34 aA40 aA49 aA55 
+14: aA04 aA10 aA19 aA25 aA34 aA40 aA49 aA55
+15: aA04 aA10 aA19 aB25 aA34 aB40 aA49 aB55  
+16: aA04 aA11 aB19 aA26 aA35 aB41 aA50 aA55 aA59
+17: aA08 aD11 aA15 aB23 aA27 aB30 aA38 aB42 aB48 aB51 aB57  
+18: aA01 aB08 aB11 aA17 aB20 aA23 aB28 aB31 aA37 aB40 aB46 aA50 aB56 aA59
+19: aB06 aB09 aA15 aB17 aA24 aA28 aB35 aA38 aA44 aA47 aA50 aA57 
+20: aB01 aA08 aA11 aB15 aA22 aA26 aA30 aA37 aA40 aA48 aB52 aA59
+21: aA03 aA11 aA15 aA24 aA28 aA36 aA40 aA48 aA52
+22: aA00 aA03 aA11 aA16 aA23 aA27 aA36 aB40 aA48 aA52 aB56 
+23: aA05 aA10 aA15 aB24 aA29 aA35 aB44 aA48 aA53 aA59
+0: aA06 aA09 aB12 aA17 bB22 bA27 bE33
+
+[SAT][SUN][HOL]
+# 新宿駅 小田原方面(休日)
+5: gM00 gP20 dN31 gI35 dN46 gI50  
+6: dM01 gI05 dMl16 gI20 dNj31 gI33 dNl41 gI43 dM51 gI53  
+7: aN00 dNj01 gI03 dMj11 gI13 aR20 dN21 gI23 aN30 dMl31 gI33 fC37 dNj41 gI43 dNl51 gI53  
+8: aN00 dM01 gC03 aP10 dNj11 gI13 fC19 dO21 gP23 aN30 dM31 gC33 aM40 dNj41 gP43 fC48 dO51 gI53  
+9: aN00 dM01 gI03 fC07 aP10 dNl11 gI13 dO21 gI23 aN30 dMl31 gI33 aM40 dNl41 gI43 fQm50 gI53 cO56  
+10: dMl00 gI03 aN10 dN11 gI13 aR20 fQm21 gI23 cO28 dMl30 gI33 aN40 dN41 gI43 aM50 fQm51 gI53 cO59  
+11: dMl00 gI03 aN10 dN11 gI13 aP20 fQm21 gI23 cO29 dMl30 gI33 aN40 dN41 gI43 aM50 fQm51 gI53 cO59  
+12: dMl01 gI03 aN10 dN11 gI13 fIm21 gC23 cO28 dMl31 gI33 aN40 dN41 gI43 aM50 fQm51 gI53 cO59  
+13: dMl01 gI03 aN10 dN11 gI13 aP20 fQm21 gI23 cO29 dMl31 gI33 aN40 dN41 gI43 aR50 fQm51 gI53 cO59  
+14: dMl01 gI03 aN10 dN11 gI13 aM20 fQm21 gI23 cO29 dMl31 gI33 aN40 dN41 gI43 aM50 fQm51 gI53 cO59  
+15: dMl01 gI03 aN10 dN11 gI13 aP20 fQm21 gI23 cO29 dMl31 gI33 aN40 dN41 gI43 aM50 fQm51 gI53 cO59  
+16: dMl01 gI03 aN10 dN11 gI13 aM20 fQm21 gI23 cO29 dMl31 gI33 aN40 dNj41 gI43 aM50 fQm51 gI53 cO59  
+17: dMl01 gI03 aN10 dM11 gI13 aM20 fQm21 gM23 cO25 dMl31 gI33 aN40 dMj41 gI43 aR50 fQm51 gL53 cO55  
+18: aN00 dF01 gI03 cM08 dMj11 gI13 fQ19 dO21 gL23 aN30 dMj31 gI33 aI40 dMj41 gI43 fQ49 dO51 gL53  
+19: aN00 dMj01 gI03 cO08 dMj11 gF13 fCm18 dO21 gL23 aM30 dMj31 gI33 aQ40 dMj41 gI43 fC49 dO51 gI53  
+20: aM00 dMj01 gI03 cO08 dM11 gI13 fC19 dO21 gI23 aM30 dM31 gI33 aQ40 dM41 gF43 fC49 dO51 gM53  
+21: aI00 dM01 gI03 dM11 gI13 cO18 dO21 gI23 aM30 dM31 gI33 fC37 dMl41 gI43 dPn51 gI53  
+22: aI00 dMl01 gI03 dMl11 gF12 aO20 dPn21 gI23 dMl31 gI33 aI40 dK41 gF43 dMl51 gI53  
+23: aI00 dF03 gI05 dF15 gI16 dMl25 gD26 dMl35 gC36 eF45 gF48 dF55  
+0: gF00 gF14 gF25 gB35 gA52
+
+
+</pre>
+
+<pre id="tbl002" style="display:none;">; 小田急 秦野駅 新宿方面
+; 平成16.12.11改正
+
+a:特急
+c:快速急行
+d:急行
+e:準急
+f:区間準急
+g:各停
+A:新宿
+B:経堂
+C:成城学園前
+D:町田
+E:相模大野
+F:本厚木
+h:経堂通過
+i:各停新宿行きに連絡
+j:行き先駅から急行新宿行き
+k:本厚木で準急に連絡
+l:本厚木で各停新宿行きに連絡
+m:相模大野で快速急行に連絡
+n:始発
+o:本厚木で各停相模大野行きに連絡
+
+# 秦野駅 新宿方面(平日)
+5: gFojn04 dAh18 dAh29 dAh39 dAh50 gFjk56  
+6: dAh01 dAh09 dAh17 dAh26 aA33 dAh36 dAh45 dAh52 gA58  
+7: dAh03 dAh11 dAh17 dAh23 eAnh[?]28 dAh32 dAh39 eAh43 dAh51 dAh59  
+8: gFi04 aA08 dAh13 cA22 dAh30 dAh40 dAh50 gEl56  
+9: cA07 dA14 dDm25 dA35 dA48 dEm58  
+10: cA08 dA14 dEm26 dA35 dA46 dEm57  
+11: cA08 dA14 aA19 gEm21 dA33 aA42 dA45 dEm57  
+12: cA08 dA15 dEm26 dA35 dA46 dEm57  
+13: cA08 dA15 dEm26 dA35 aA42 dA46 dEm57  
+14: cA08 dA15 dEm26 dA35 aA42 dA46 dEm57  
+15: cA08 dA15 dEm26 dA35 dA46 dEm57  
+16: cA08 dA13 gEm18 aA22 gFi27 dAh38 dAh46 dEm57  
+17: cA06 dAh13 dAh25 dAh36 aA43 dAh48 eA56  
+18: cA08 dAh17 aA25 gA28 dAh37 dAh44 dAh56  
+19: dAh06 aA12 gA15 dAh23 dAh36 aA45 dAh48 gA55  
+20: dAh05 dAh13 dAhm25 gFi34 gA40 aA47 dAh50  
+21: dAh03 fA10 dAhm24 gFi32 cA41 gA49  
+22: dAhm00 gA08 aA15 dAh23 gC34 dAh42 gFi58  
+23: gA14 dAh25 gB41  
+0: gC02 gD28  
+
+[SAT][SUN][HOL]
+# 秦野駅 新宿方面(休日)
+5: gFojn04 dA18 gD33 dA46 dA56  
+6: dEl07 gD12 dA17 dA27 cA37 dA47 dA58  
+7: dAm08 dA18 dA29 dAm37 cA48 dA56  
+8: dAm06 dEl14 gFi18 dA28 dA38 dAm46 gD53  
+9: dA04 dA16 dEm26 dA35 aA41 dA45 dEm57  
+10: dA06 dA15 dEm27 dA35 aA43 dA46 dEm57  
+11: dA05 dA15 gA26 dA35 aA42 dA46 dEm57  
+12: dA06 dA16 dDm27 dA35 dA46 dDm57  
+13: dA05 dA16 dEm27 dA35 aA42 dA46 dEm57  
+14: dA05 dA16 dEm27 dA35 aA42 dA46 dEm57  
+15: dA05 dA16 dEm27 dA35 dA46 dEm57  
+16: dA05 aA12 dA16 gFi27 dA35 dA46 dEm57  
+17: dA06 dA15 dDl27 dA35 aA42 dA45 dAm57
+18: dA05 aA12 dA16 dEl27 dA36 dA45 dAm57
+19: dA05 aA10 dA15 gFi25 dA34 aA42 dA45 dA56
+20: dA05 dA15 gA27 dA35 dA44 aA51 gA55
+21: dA05 dA15 gFi27 dA35 dA45 aA52 gA58 
+22: dA11 gFi21 dA31 gFi47
+23: gA00 gA21 gB40
+0: gC02 gD27
+
+
+</pre>
+
+<pre id="tbl003" style="display:none;">; 小田急 秦野駅 小田原方面
+; 平成16.12.11改正
+
+a:特急
+c:快速急行
+d:急行
+i:急行(経堂通過)
+e:準急
+f:区間準急
+g:各停
+L:新松田
+M:小田原
+N:箱根湯本
+R:沼津
+j:新松田から各駅停車小田原行き
+k:新松田から各駅停車箱根湯本行き
+l:小田原まで各駅に停車
+o:新松田で小田原行き各停に連絡
+
+
+# 秦野駅 小田原方面(平日)
+5: gM23 gM34 gM47  
+6: gLo00 gM14 gM28 dN37 dMj52 gLo59  
+7: dNj07 gL17 dMk23 gM31 dM36 dN44 gM50 dLl58  
+8: gN03 dL09 dM19 dLl28 dNj37 dNj48  
+9: dNl01 dMk10 dM18 dLl26 aN30 dNj37 dNl47 aN58  
+10: dLl00 dNj08 dM18 dNj27 dL35 dNj42 aM46 dMj56  
+11: gN05 dNl12 dM23 dNj34 dLl43 aM49 dN53  
+12: dNl04 dNl13 cM23 dNl34 dLl43 aM49 dN53  
+13: dNl02 dNl13 cM23 dNl34 dLl43 aM49 dN53  
+14: dNl02 dNl13 cM23 dNl34 dLl43 dN54  
+15: dNl02 dNl13 cM23 dNl34 dLl43 aM49 dN53  
+16: dNl02 dNl13 cM23 dNl34 dLl43 aM49 dN53  
+17: dNj02 dNl14 cM24 dMj34 dNl45 aM51 dMj56  
+18: dLl10 dMj17 cM26 aN38 gM39 dLl49 aN58 dMj59  
+19: gL07 dMj13 dLl21 aN33 dMj35 dMj44 dMjl51  
+20: aN02 cM03 gL09 dMj15 dMj24 aM31 dMjl33 gLo40 dM52  
+21: aM02 dMj03 gM08 dM15 gL21 aM32 dMj33 gL38 dM43 gM49 dMj57  
+22: gLo05 dMj14 aM30 dMj31 dLl43 dMj57  
+23: gM08 dM16 dMl29 gL38 dMl45 dM58  
+0: gM06 dMl18 gM32 dMl45  
+
+[SAT][SUN][HOL]
+# 秦野駅 小田原方面(休日)
+5: gM23 gM34 gM47  
+6: gM01 gM14 gM28 dN39 dN53  
+7: dL08 gM17 dMl25 dNj38 dNl49  
+8: dM02 dNj10 dMj25 dN32 dLl40 dNj53  
+9: dNl03 dL12 dNj23 dNl33 dL44 dNj53  
+10: dNl03 dM12 dNl24 dMl33 aM38 dLl44 dNl52  
+11: dNl05 dLl13 dN24 dNl34 dLl43 aM47 dN54  
+12: dNl04 dLl13 dN23 dNl34 dLl44 aM47 dN54  
+13: dNl04 dLl14 dN23 dNl34 dLl44 aM47 dN54  
+14: dNl04 dLl14 dN23 dNl34 dLl44 dN53  
+15: dNl04 dLl14 aM17 dN24 dNl34 dLl44 aM47 dN54  
+16: dNl04 dLl14 dN23 dNl34 dLl44 aM47 dN54  
+17: dNl04 dLl14 aM17 dN24 dNj34 dLl43 aM47 dNj54  
+18: dN04 dLl14 aM19 dL23 dLl31 dLl47 dMj54 aN58  
+19: gM04 cM12 dMj22 aN26 gLo32 dMj43 dMj52 aN55  
+20: gLo02 dMj12 dMj22 aM26 gLo32 dMj42 dMj53 aM56  
+21: gLo02 dMj12 aM26 dM28 gM33 dM43 dM53  
+22: gM03 dM13 dM25 aM28 gM33 dM43 dMl53  
+23: dM02 dMl11 dMl23 gL34 dMl44  
+0: dMl04 gM18 dMl34 dMl44
+
+
+</pre>
+
+<pre id="tbl004" style="display:none;">; 小田急 渋沢駅 新宿方面
+; 平成16.12.11改正
+
+a:特急
+c:快速急行
+d:急行
+e:準急
+f:区間準急
+g:各停
+A:新宿
+B:経堂
+C:成城学園前
+D:町田
+E:相模大野
+F:本厚木
+h:経堂通過
+i:各停新宿行きに連絡
+j:行き先駅から急行新宿行き
+k:本厚木で準急に連絡
+l:本厚木で各停新宿行きに連絡
+m:相模大野で快速急行に連絡
+n:始発
+o:本厚木で各停相模大野行きに連絡
+
+# 渋沢駅 新宿方面(平日)
+5: dAh14 dAh25 dAh35 dAh46 gFjk52 dAh57  
+6: dAh05 dAh13 dAh21 dAh32 dAh41 dAh48 gA52 dAh59  
+7: dAh07 dAh13 dAh19 dAh27 dAh34 eAh39 dAh47 dAh55 gFi58  
+8: dAh08 cA18 dAh26 dAh36 dAh46 gEl52  
+9: cA03 dA10 dDm18 dA31 dA44 dEm54  
+10: cA04 dA10 dEm18 dA31 dA42 dEm53  
+11: cA04 dA10 gEm17 dA29 dA41 dEm53  
+12: cA04 dA11 dEm18 dA31 dA42 dEm53  
+13: cA04 dA11 dEm17 dA31 dA42 dEm53  
+14: cA04 dA11 dEm17 dA31 dA42 dEm53  
+15: cA04 dA11 dEm17 dA31 dA42 dEm53  
+16: cA04 dA09 gEm14 gFi23 dAh34 dAh42 dEm53  
+17: cA02 dAh08 dAh21 dAh32 dAh44 eA52  
+18: cA04 dAh13 gA24 dAh33 dAh40 dAh52  
+19: dAh03 gA11 dAh19 dAh32 dAh44 gA52  
+20: dAh01 dAh10 dAhm21 gFi30 gA36 dAh46 dAh59  
+21: fA06 dAhm20 gFi28 cA37 gA45 dAhm57  
+22: gA04 dAh19 gC30 dAh38 gFi54  
+23: gA10 dAh21 gB37 gC58  
+0: gD24  
+
+[SAT][SUN][HOL]
+# 渋沢駅 新宿方面(休日)
+5: dA14 gD29 dA42 dA52  
+6: dEl03 gD09 dA13 dA23 cA33 dA43 dA54  
+7: dAm04 dA14 dA26 dAm33 cA44 dA52  
+8: dAm02 dEl10 gFi14 dA24 dA34 dAm42 gD49 dA57  
+9: dA12 dEm22 dA31 dA41 dEm53  
+10: dA02 dA11 dEm23 dA31 dA42 dEm53  
+11: dA01 dA11 gA22 dA29 dA42 dEm53  
+12: dA02 dA12 dDm23 dA31 dA42 dDm53  
+13: dA01 dA12 dEm23 dA31 dA42 dEm53  
+14: dA01 dA12 dEm23 dA31 dA42 dEm53  
+15: dA00 dA12 dEm23 dA31 dA42 dEm53  
+16: dA01 dA12 gFi23 dA31 dA42 dEm53  
+17: dA02 dA11 dDl23 dA31 dA41 dAm53  
+18: dA01 dA12 dEl23 dA32 dA41 dAm53  
+19: dA01 dA11 gFi18 dA30 dA41 dA52  
+20: dA01 dA11 gA24 dA31 dA40 gA52  
+21: dA01 dA11 gFi23 dA31 dA41 gA54  
+22: dA07 gFi17 dA27 gFi43 gA56  
+23: gA17 gB36 gC58  
+0: gD23
+
+
+</pre>
+
+<pre id="tbl005" style="display:none;">; 小田急 渋沢駅 小田原方面
+; 平成16.12.11改正
+
+c:快速急行
+d:急行
+i:急行(経堂通過)
+e:準急
+f:区間準急
+g:各停
+L:新松田
+M:小田原
+N:箱根湯本
+R:沼津
+j:新松田から各駅停車小田原行き
+k:新松田から各駅停車箱根湯本行き
+l:小田原まで各駅に停車
+o:新松田で小田原行き各停に連絡
+
+
+# 渋沢駅 小田原方面(平日)
+5: gM27 gM38 gM51  
+6: gLo04 gM18 gM32 dN41 dMj56  
+7: gLo03 dNj11 gL21 dMk27 gM35 dM40 dN48 gM54  
+8: dLl02 gN07 dL13 dM23 dLl33 dNj41 dNj52  
+9: dNl05 dMk14 dM22 dLl30 dNj41 dNl51  
+10: dLl04 dNj12 dM22 dNj31 dL39 dNj46  
+11: dMj00 gN09 dNl16 dM27 dNj38 dLl47 dN57  
+12: dNl08 dNl17 cM27 dNl38 dLl47 dN57  
+13: dNl06 dNl17 cM27 dNl38 dLl47 dN57  
+14: dNl06 dNl17 cM27 dNl38 dLl47 dN58  
+15: dNl06 dNl17 cM27 dNl38 dLl47 dN57  
+16: dNl06 dNl17 cM27 dNl38 dLl47 dN57  
+17: dNj06 dNl18 cM28 dMj38 dNl50  
+18: dMj00 dLl14 dMj21 cM30 gM44 dLl53  
+19: dMj03 gL11 dMj17 dLl25 dMj39 dMj48 dMjl56  
+20: cM07 gL13 dMj19 dMj28 dMjl37 gLo44 dM56  
+21: dMj07 gM12 dM19 gL25 dMj37 gL42 dM47 gM53  
+22: dMj01 gLo09 dMj18 dMj36 dLl47  
+23: dMj01 gM12 dM20 dMl33 gL42 dMl50  
+0: dM02 gM10 dMl22 gM36 dMl49  
+
+[SAT][SUN][HOL]
+# 渋沢駅 小田原方面(休日)
+5: gM27 gM38 gM51  
+6: gM05 gM18 gM32 dN43 dN57  
+7: dL12 gM21 dMl29 dNj42 dNl53  
+8: dM06 dNj14 dMj30 dN36 dLl44 dNj57  
+9: dNl07 dL16 dNj27 dNl37 dL48 dNj58  
+10: dNl07 dM16 dNl29 dMl37 dLl48 dNl56  
+11: dNl09 dLl17 dN28 dNl38 dLl47 dN58  
+12: dNl08 dLl17 dN27 dNl38 dLl48 dN58  
+13: dNl08 dLl18 dN27 dNl38 dLl48 dN58  
+14: dNl08 dLl18 dN27 dNl38 dLl48 dN57  
+15: dNl08 dLl18 dN28 dNl38 dLl48 dN58  
+16: dNl08 dLl18 dN27 dNl38 dLl48 dN58  
+17: dNl08 dLl18 dN28 dNj38 dLl47 dNj58  
+18: dN08 dLl18 dL27 dLl35 dLl51 dMj58  
+19: gM08 cM16 dMj26 gLo36 dMj47 dMj56  
+20: gLo06 dMj16 dMj26 gLo36 dMj46 dMj57  
+21: gLo06 dMj16 dM32 gM37 dM47 dM56  
+22: gM07 dM17 dM29 gM37 dM47 dMl57  
+23: dM06 dMl15 dMl27 gL38 dMl48  
+0: dMl08 gM22 dMl38 dMl48
+
+
+</pre>
+<!-- TBL_END   時刻表データ部 終了 -->
+
+<!-- HOLIDAY_START 祝日定義データ部 開始 -->
+<pre id="holiday" style="display:none;">1/1:元日
+2004/1/12:成人の日
+2/11:建国記念日
+2004/3/20:春分の日
+4/29:みどりの日
+5/3:憲法記念日
+2004/5/4:国民の休日
+5/5:子供の日
+2004/7/19:海の日
+2004/9/20:敬老の日
+2004/9/23:秋分の日
+2004/10/11:体育の日
+11/3:文化の日
+11/23:勤労感謝の日
+12/23:天皇誕生日
+2005/1/10:成人の日
+2005/3/21:春分の日振替休日
+2005/5/4:国民の休日
+2005/7/18:海の日
+2005/9/19:敬老の日
+2005/9/23:秋分の日
+2005/10/10:体育の日
+2006/1/2:振替休日
+2006/1/9:成人の日
+2006/3/21:春分の日
+2006/5/4:国民の休日
+2006/7/17:海の日
+2006/9/18:敬老の日
+2006/9/23:秋分の日
+2006/10/9:体育の日
+
+</pre>
+<!-- HOLIDAY_END   祝日定義データ部 終了 -->
+
+
+</font>
+
+<!-- Js-TT 本体スクリプト部 開始 -->
+
+<noscript>
+JavaScriptを有効(ON)に設定してください。
+</noscript>
+<!-- Js-TT 本体スクリプト部 終了 -->
+
+
+</head>
+
+
+  </body>
+</html>
